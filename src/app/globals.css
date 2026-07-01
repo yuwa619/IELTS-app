@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #16203a;
+  --navy-700: #1b2b4a;
+  --navy-600: #22325a;
+  --blue-500: #3a63b0;
+  --blue-50: #eaf0fb;
+  --maple: #c1453a;
+  --maple-50: #fbeeed;
+  --skill-listening: #3a63b0;
+  --skill-reading: #2f8f86;
+  --skill-writing: #7a5fb0;
+  --skill-speaking: #c08a3e;
+  --success: #2f7d5b;
+  --success-50: #eef4f1;
+  --warning: #b8821f;
+  --warning-50: #fbf3e2;
+  --danger: #c0453a;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --tint: #eef1f6;
+  --border: #e7eaf0;
+  --text: #222a3a;
+  --text-muted: #5a6478;
+  --text-faint: #9aa3b4;
+  --background: var(--bg);
+  --foreground: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-navy: var(--navy-700);
+  --color-blue: var(--blue-500);
+  --color-maple: var(--maple);
+  --color-canvas: var(--bg);
+  --color-card: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--text-muted);
+  --font-sans: var(--font-hanken);
+  --font-serif: var(--font-newsreader);
+  --font-mono: var(--font-roboto-mono);
+  --shadow-card: 0 1px 3px rgba(22, 32, 58, 0.06);
+  --shadow-raised: 0 6px 18px rgba(27, 43, 74, 0.12);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-hanken), Arial, Helvetica, sans-serif;
+  min-height: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(193, 69, 58, 0.18);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.cb-focus {
+  outline: 3px solid rgba(27, 43, 74, 0.14);
+  outline-offset: 2px;
 }

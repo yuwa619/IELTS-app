@@ -1,0 +1,10 @@
+{
+  "name": "Clearband",
+  "short_name": "Clearband",
+  "description": "Canada-first IELTS General Training preparation.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F5F6F8",
+  "theme_color": "#1B2B4A",
+  "icons": []
+}
