@@ -38,8 +38,12 @@ describe("Supabase data mode and auth helpers", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://clearband-demo.netlify.app/");
 
     const env = await import("@/lib/supabase/env");
+    const redirects = await import("@/lib/supabase/auth-redirects");
 
     expect(env.getSiteUrl()).toBe("https://clearband-demo.netlify.app");
+    expect(redirects.buildAuthCallbackUrl("http://localhost:3000")).toBe(
+      "https://clearband-demo.netlify.app/auth/callback",
+    );
   });
 
   it("classifies app routes as protected for Supabase mode middleware", async () => {

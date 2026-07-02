@@ -110,6 +110,8 @@ http://localhost:3000/auth/callback
 https://YOUR-NETLIFY-SITE.netlify.app/auth/callback
 ```
 
+Use the exact `/auth/callback` URL. Do not include `?next=...` in the Supabase allow-list; Clearband decides whether to send the user to `/onboarding` or `/dashboard` after the callback succeeds.
+
 If you add a custom domain later, add:
 
 ```text

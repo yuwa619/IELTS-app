@@ -24,6 +24,10 @@ export function isProtectedAppPath(pathname: string) {
   );
 }
 
+export function isAuthCallbackPath(pathname: string) {
+  return pathname === "/auth/callback";
+}
+
 export function loginRedirectUrl(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = "/login";
@@ -37,6 +41,7 @@ export function loginRedirectUrl(request: NextRequest) {
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  if (isAuthCallbackPath(request.nextUrl.pathname)) return response;
   if (!hasSupabaseEnv()) return response;
 
   const supabase = createServerClient(
@@ -47,13 +52,16 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
+          );
+          Object.entries(headers).forEach(([key, value]) =>
+            response.headers.set(key, value),
           );
         },
       },

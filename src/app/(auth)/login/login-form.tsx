@@ -4,23 +4,26 @@ import { Mail } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button, ButtonLink, Input, Label } from "@/components/ui";
+import {
+  buildAuthCallbackUrl,
+  classifyAuthError,
+  loginErrorMessage,
+  safeLocalPath,
+} from "@/lib/supabase/auth-redirects";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm({ mockMode }: { mockMode: boolean }) {
   const searchParams = useSearchParams();
   const requestedNext = searchParams.get("next") ?? "/onboarding";
-  const nextPath =
-    requestedNext.startsWith("/") && !requestedNext.startsWith("//")
-      ? requestedNext
-      : "/onboarding";
+  const nextPath = safeLocalPath(requestedNext, "/onboarding");
+  const callbackError = loginErrorMessage(searchParams.get("error"));
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(callbackError);
   const [loading, setLoading] = useState(false);
 
   function authCallbackUrl() {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
-    return `${appUrl.replace(/\/$/, "")}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    return buildAuthCallbackUrl(window.location.origin);
   }
 
   async function signInWithEmail() {
@@ -48,7 +51,7 @@ export function LoginForm({ mockMode }: { mockMode: boolean }) {
     setLoading(false);
 
     if (authError) {
-      setError(authError.message);
+      setError(loginErrorMessage(classifyAuthError(authError.message)));
       return;
     }
 
@@ -76,7 +79,9 @@ export function LoginForm({ mockMode }: { mockMode: boolean }) {
       },
     });
 
-    if (authError) setError(authError.message);
+    if (authError) {
+      setError(loginErrorMessage(classifyAuthError(authError.message)));
+    }
   }
 
   return (
