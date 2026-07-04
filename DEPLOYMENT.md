@@ -112,13 +112,25 @@ https://YOUR-NETLIFY-SITE.netlify.app/auth/callback
 
 Use the exact `/auth/callback` URL. Do not include `?next=...` in the Supabase allow-list; Clearband decides whether to send the user to `/onboarding` or `/dashboard` after the callback succeeds.
 
+If the redirect URL is missing from this allow-list, Supabase silently falls back to the Site URL, so magic links land on `/` and the user never gets a session. Clearband's proxy now rescues auth codes that land on `/` or `/login` by forwarding them to `/auth/callback`, but the allow-list should still be correct.
+
 If you add a custom domain later, add:
 
 ```text
 https://YOUR-CUSTOM-DOMAIN/auth/callback
 ```
 
-Google and Apple buttons are provider-ready only. To activate them later, enable the providers in Supabase Auth and use the same app callback URL pattern.
+### Recommended: token_hash email template (works across devices)
+
+The default `{{ .ConfirmationURL }}` magic-link template uses the PKCE `?code=` flow, which only works in the same browser that requested the link. For links that also work when opened on another device or browser, change the **Magic Link** email template in Supabase → Authentication → Email Templates to:
+
+```html
+<a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email">Sign in to Clearband</a>
+```
+
+`/auth/callback` supports both `?code=` and `?token_hash=` links.
+
+Google and Apple buttons are hidden until you enable the provider in Supabase Auth **and** set `NEXT_PUBLIC_OAUTH_PROVIDERS` (for example `NEXT_PUBLIC_OAUTH_PROVIDERS=google,apple`) in Netlify.
 
 ## 8. Test Magic-Link Login On Netlify
 

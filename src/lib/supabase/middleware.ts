@@ -28,6 +28,19 @@ export function isAuthCallbackPath(pathname: string) {
   return pathname === "/auth/callback";
 }
 
+// If Supabase rejects the redirect_to allow-list it falls back to the Site URL,
+// landing auth codes on `/` (or `/login`) where they would silently die.
+// Forward them to the callback route so the sign-in still completes.
+export function strayAuthCodeRedirect(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
+  if (pathname !== "/" && pathname !== "/login") return null;
+  if (!searchParams.has("code") && !searchParams.has("token_hash")) return null;
+
+  const callbackUrl = request.nextUrl.clone();
+  callbackUrl.pathname = "/auth/callback";
+  return NextResponse.redirect(callbackUrl);
+}
+
 export function loginRedirectUrl(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = "/login";
@@ -43,6 +56,9 @@ export async function updateSession(request: NextRequest) {
 
   if (isAuthCallbackPath(request.nextUrl.pathname)) return response;
   if (!hasSupabaseEnv()) return response;
+
+  const strayAuthCode = strayAuthCodeRedirect(request);
+  if (strayAuthCode) return strayAuthCode;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

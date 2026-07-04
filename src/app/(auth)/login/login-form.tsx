@@ -11,8 +11,12 @@ import {
   safeLocalPath,
 } from "@/lib/supabase/auth-redirects";
 import { createClient } from "@/lib/supabase/client";
+import { enabledOAuthProviders, type OAuthProvider } from "@/lib/supabase/env";
 
 export function LoginForm({ mockMode }: { mockMode: boolean }) {
+  const oauthProviders = mockMode
+    ? (["google", "apple"] as OAuthProvider[])
+    : enabledOAuthProviders();
   const searchParams = useSearchParams();
   const requestedNext = searchParams.get("next") ?? "/onboarding";
   const nextPath = safeLocalPath(requestedNext, "/onboarding");
@@ -58,7 +62,7 @@ export function LoginForm({ mockMode }: { mockMode: boolean }) {
     setStatus("Check your inbox for the Clearband sign-in link.");
   }
 
-  async function signInWithProvider(provider: "google" | "apple") {
+  async function signInWithProvider(provider: OAuthProvider) {
     setError(null);
 
     if (mockMode) {
@@ -114,22 +118,20 @@ export function LoginForm({ mockMode }: { mockMode: boolean }) {
           {loading ? "Sending link..." : "Continue with email"}
         </Button>
       )}
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => signInWithProvider("google")}
-        >
-          Google
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => signInWithProvider("apple")}
-        >
-          Apple
-        </Button>
-      </div>
+      {oauthProviders.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3">
+          {oauthProviders.map((provider) => (
+            <Button
+              key={provider}
+              type="button"
+              variant="outline"
+              onClick={() => signInWithProvider(provider)}
+            >
+              {provider === "google" ? "Google" : "Apple"}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       {status ? <p className="text-sm text-[var(--success)]">{status}</p> : null}
       {error ? <p className="text-sm text-[var(--maple)]">{error}</p> : null}
     </div>

@@ -24,6 +24,19 @@ export function shouldShowDataModeIndicator() {
   );
 }
 
+export type OAuthProvider = "google" | "apple";
+
+// OAuth buttons stay hidden until the provider is actually enabled in
+// Supabase and listed here, e.g. NEXT_PUBLIC_OAUTH_PROVIDERS=google,apple.
+export function enabledOAuthProviders(): OAuthProvider[] {
+  return (process.env.NEXT_PUBLIC_OAUTH_PROVIDERS ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter((value): value is OAuthProvider =>
+      value === "google" || value === "apple",
+    );
+}
+
 export function getSiteUrl() {
   return (
     process.env.NEXT_PUBLIC_APP_URL ??

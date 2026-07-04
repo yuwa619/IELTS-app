@@ -46,6 +46,45 @@ describe("Supabase data mode and auth helpers", () => {
     );
   });
 
+  it("forwards stray Supabase auth codes on / and /login to the auth callback", async () => {
+    const { NextRequest } = await import("next/server");
+    const { strayAuthCodeRedirect } = await import("@/lib/supabase/middleware");
+
+    const landing = strayAuthCodeRedirect(
+      new NextRequest("https://clearband.netlify.app/?code=abc-123"),
+    );
+    expect(landing?.headers.get("location")).toBe(
+      "https://clearband.netlify.app/auth/callback?code=abc-123",
+    );
+
+    const login = strayAuthCodeRedirect(
+      new NextRequest("https://clearband.netlify.app/login?token_hash=h&type=email"),
+    );
+    expect(login?.headers.get("location")).toBe(
+      "https://clearband.netlify.app/auth/callback?token_hash=h&type=email",
+    );
+
+    expect(
+      strayAuthCodeRedirect(new NextRequest("https://clearband.netlify.app/")),
+    ).toBeNull();
+    expect(
+      strayAuthCodeRedirect(
+        new NextRequest("https://clearband.netlify.app/dashboard?code=abc"),
+      ),
+    ).toBeNull();
+  });
+
+  it("hides OAuth providers unless they are explicitly enabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_OAUTH_PROVIDERS", "");
+    let env = await import("@/lib/supabase/env");
+    expect(env.enabledOAuthProviders()).toEqual([]);
+
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_OAUTH_PROVIDERS", "google, Apple, facebook");
+    env = await import("@/lib/supabase/env");
+    expect(env.enabledOAuthProviders()).toEqual(["google", "apple"]);
+  });
+
   it("classifies app routes as protected for Supabase mode middleware", async () => {
     const { isProtectedAppPath } = await import("@/lib/supabase/middleware");
 

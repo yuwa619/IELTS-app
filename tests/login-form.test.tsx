@@ -40,6 +40,40 @@ describe("LoginForm", () => {
     });
   });
 
+  it("hides Google and Apple buttons in Supabase mode until providers are enabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_OAUTH_PROVIDERS", "");
+    vi.doMock("next/navigation", () => ({
+      useSearchParams: () => new URLSearchParams(),
+    }));
+    vi.doMock("@/lib/supabase/client", () => ({
+      createClient: () => ({ auth: {} }),
+    }));
+
+    const { LoginForm } = await import("@/app/(auth)/login/login-form");
+
+    render(<LoginForm mockMode={false} />);
+
+    expect(screen.queryByRole("button", { name: /google/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /apple/i })).not.toBeInTheDocument();
+  });
+
+  it("shows enabled OAuth providers in Supabase mode", async () => {
+    vi.stubEnv("NEXT_PUBLIC_OAUTH_PROVIDERS", "google");
+    vi.doMock("next/navigation", () => ({
+      useSearchParams: () => new URLSearchParams(),
+    }));
+    vi.doMock("@/lib/supabase/client", () => ({
+      createClient: () => ({ auth: {} }),
+    }));
+
+    const { LoginForm } = await import("@/app/(auth)/login/login-form");
+
+    render(<LoginForm mockMode={false} />);
+
+    expect(screen.getByRole("button", { name: /google/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /apple/i })).not.toBeInTheDocument();
+  });
+
   it("shows callback failure messages on the login page", async () => {
     vi.doMock("next/navigation", () => ({
       useSearchParams: () => new URLSearchParams("error=expired_link"),
