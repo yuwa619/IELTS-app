@@ -1,0 +1,17 @@
+{
+  "source": {
+    "name": "Example Dormant Source",
+    "publisher": "Example Publisher",
+    "edition": "1st",
+    "source_year": 2020,
+    "is_licensed": false,
+    "personal_use_only": true,
+    "licence_note": "No licence held. This example exists only to exercise the pipeline gate; it contains no content.",
+    "attribution": "Example"
+  },
+  "batch": {
+    "name": "Empty example batch",
+    "notes": "Zero items. The gate should refuse this batch (no written licence, no approved items)."
+  },
+  "items": []
+}

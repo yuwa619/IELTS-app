@@ -1,4 +1,20 @@
 export type Skill = "listening" | "reading" | "writing" | "speaking";
+export type ModuleType = "general_training" | "academic" | "shared" | "unknown";
+export type AccessScope = "public" | "admin_only";
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
+// Attached to any content item. Original Clearband content defaults to
+// general_training / shared and public. Academic content is never in the
+// default path and never counts toward Express Entry readiness.
+export interface ContentClassification {
+  moduleType: ModuleType;
+  expressEntryRelevant: boolean;
+  canadaPathEligible: boolean;
+  accessScope: AccessScope;
+  reviewStatus: ReviewStatus;
+  sourceName?: string;
+}
+
 export type GoalMode = "eligible" | "crs" | "unsure";
 export type TestFormat = "computer" | "paper" | "unsure";
 export type DailyBlock = "warmup" | "lesson" | "practice" | "review";
@@ -52,6 +68,8 @@ export interface Lesson {
   estMinutes: number;
   order: number;
   published: boolean;
+  moduleType?: ModuleType;
+  sourceName?: string;
   sections?: LessonSection[];
 }
 
@@ -81,6 +99,8 @@ export interface PracticeQuestion {
   answerKey: { answer: string | string[]; evidence?: string };
   explanation: string;
   published: boolean;
+  moduleType?: ModuleType;
+  sourceName?: string;
 }
 
 export interface PracticeAttempt {
@@ -103,6 +123,8 @@ export interface WritingPrompt {
   bullets: string[];
   type: string;
   published: boolean;
+  moduleType?: ModuleType;
+  sourceName?: string;
 }
 
 export interface WritingCriteria {
@@ -144,6 +166,8 @@ export interface SpeakingPrompt {
   prompt: string;
   cuePoints: string[];
   published: boolean;
+  moduleType?: ModuleType;
+  sourceName?: string;
 }
 
 export interface SpeakingAttempt {

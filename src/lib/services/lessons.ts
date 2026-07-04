@@ -15,6 +15,8 @@ function lessonFromRow(row: Record<string, unknown>, sections?: Record<string, u
     estMinutes: Number(row.est_minutes ?? 8),
     order: Number(row.display_order ?? 0),
     published: Boolean(row.published),
+    moduleType: (row.module_type as Lesson["moduleType"]) ?? "general_training",
+    sourceName: (row.source_name as string) ?? undefined,
     sections: sections?.map((section) => ({
       id: String(section.id),
       lessonId: String(section.lesson_id ?? row.id),
@@ -31,7 +33,12 @@ export async function getLessons(): Promise<(Lesson & { completed?: boolean })[]
 
   const { supabase, user } = requireUser(ctx);
   const [{ data: rows }, { data: progress }] = await Promise.all([
-    supabase.from("lessons").select("*").eq("published", true).order("display_order"),
+    supabase
+      .from("lessons")
+      .select("*")
+      .eq("published", true)
+      .in("module_type", ["general_training", "shared"])
+      .order("display_order"),
     supabase.from("lesson_progress").select("lesson_id").eq("user_id", user.id),
   ]);
   if (!rows?.length) return lessons; // content not seeded yet

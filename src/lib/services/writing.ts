@@ -14,18 +14,30 @@ function promptFromRow(row: Record<string, unknown>): WritingPrompt {
     bullets: (row.bullets as string[]) ?? [],
     type: String(row.letter_type ?? row.essay_type ?? ""),
     published: Boolean(row.published),
+    moduleType: (row.module_type as WritingPrompt["moduleType"]) ?? "general_training",
+    sourceName: (row.source_name as string) ?? undefined,
   };
 }
 
+// Writing Task 1 is GT letters only (never Academic charts). Task 2 essays are
+// shared. Academic Task 1 module_type is excluded from both by default.
 export async function getWritingPrompts(task?: "task1" | "task2") {
   const ctx = await getServiceContext();
   if (ctx.mode === "supabase" && ctx.supabase) {
-    let query = ctx.supabase.from("writing_prompts").select("*").eq("published", true);
+    let query = ctx.supabase
+      .from("writing_prompts")
+      .select("*")
+      .eq("published", true)
+      .in("module_type", ["general_training", "shared"]);
     if (task) query = query.eq("task", task);
     const { data } = await query;
     if (data?.length) return data.map(promptFromRow);
   }
-  return task ? writingPrompts.filter((prompt) => prompt.task === task) : writingPrompts;
+  return writingPrompts.filter(
+    (prompt) =>
+      (!task || prompt.task === task) &&
+      (prompt.moduleType ?? "general_training") !== "academic",
+  );
 }
 
 export async function submitWriting(input: { promptId: string; text: string; timeMs: number }) {

@@ -33,7 +33,47 @@ async function assertOk<T>(label: string, promise: PromiseLike<{ data: T; error:
   return data;
 }
 
+// Every seeded content row is tagged as Clearband Original, public, approved,
+// and Express-Entry eligible. Listening/Speaking are shared; Reading and
+// Writing Task 1 are general_training.
+function classification(moduleType: "general_training" | "shared", sourceId: string | null) {
+  return {
+    module_type: moduleType,
+    express_entry_relevant: true,
+    canada_path_eligible: true,
+    access_scope: "public" as const,
+    review_status: "approved" as const,
+    source_id: sourceId,
+    imported_from: "clearband-original-seed",
+  };
+}
+
 async function main() {
+  // Ensure the Clearband Original content source exists and grab its id.
+  const sourceRows = await assertOk(
+    "seed content source",
+    supabase
+      .from("content_sources")
+      .upsert(
+        [
+          {
+            name: "Clearband Original",
+            publisher: "Clearband",
+            source_year: 2026,
+            is_licensed: true,
+            personal_use_only: false,
+            licence_note:
+              "Original IELTS General Training-style content authored for Clearband.",
+            attribution: "Clearband",
+          },
+        ],
+        { onConflict: "name" },
+      )
+      .select("id, name"),
+  );
+  const clearbandSourceId =
+    (sourceRows as { id: string; name: string }[] | null)?.[0]?.id ?? null;
+
   const lessonRows = await assertOk(
     "seed lessons",
     supabase
@@ -48,6 +88,7 @@ async function main() {
           est_minutes: lesson.estMinutes,
           display_order: lesson.order,
           published: true,
+          ...classification(lesson.moduleType === "shared" ? "shared" : "general_training", clearbandSourceId),
         })),
         { onConflict: "slug" },
       )
@@ -87,6 +128,7 @@ async function main() {
         answer_key: question.answerKey,
         explanation: question.explanation,
         published: true,
+        ...classification(question.moduleType === "shared" ? "shared" : "general_training", clearbandSourceId),
       })),
       { onConflict: "skill,question_type,prompt" },
     ),
@@ -103,6 +145,7 @@ async function main() {
         bullets: prompt.bullets,
         band_samples: [],
         published: true,
+        ...classification(prompt.moduleType === "shared" ? "shared" : "general_training", clearbandSourceId),
       })),
       { onConflict: "task,prompt" },
     ),
@@ -117,6 +160,7 @@ async function main() {
         prompt: prompt.prompt,
         cue_points: prompt.cuePoints,
         published: true,
+        ...classification("shared", clearbandSourceId),
       })),
       { onConflict: "part,prompt" },
     ),
@@ -132,6 +176,7 @@ async function main() {
         topic: item.topic,
         cefr: item.cefr,
         published: true,
+        ...classification("general_training", clearbandSourceId),
       })),
       { onConflict: "term" },
     ),
@@ -146,6 +191,7 @@ async function main() {
         examples: item.examples,
         drill_question_ids: [],
         published: true,
+        ...classification("general_training", clearbandSourceId),
       })),
       { onConflict: "title" },
     ),
@@ -156,7 +202,7 @@ async function main() {
     supabase
       .from("mock_exams")
       .upsert(
-        [{ title: mockExam.title, type: mockExam.type, published: true }],
+        [{ title: mockExam.title, type: mockExam.type, published: true, ...classification("general_training", clearbandSourceId) }],
         { onConflict: "title" },
       )
       .select("id, title"),

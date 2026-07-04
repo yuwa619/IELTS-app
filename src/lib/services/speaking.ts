@@ -13,6 +13,8 @@ function promptFromRow(row: Record<string, unknown>): SpeakingPrompt {
     prompt: String(row.prompt),
     cuePoints: (row.cue_points as string[]) ?? [],
     published: Boolean(row.published),
+    moduleType: (row.module_type as SpeakingPrompt["moduleType"]) ?? "shared",
+    sourceName: (row.source_name as string) ?? undefined,
   };
 }
 

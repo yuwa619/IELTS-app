@@ -16,6 +16,12 @@ import type {
   XPEvent,
 } from "@/types/domain";
 import { targetForClb } from "@/lib/scoring/clb";
+import {
+  gtReadingQuestions,
+  gtSpeakingPrompts,
+  gtWritingPrompts,
+  sharedListeningQuestions,
+} from "./gt-content";
 
 export const mockUser: UserProfile = {
   userId: "mock-user",
@@ -59,6 +65,8 @@ export const lessons: Lesson[] = skillLessons.map(([id, title, module, skill, su
   estMinutes: index < 4 ? 8 : 10,
   order: index + 1,
   published: true,
+  moduleType: skill === "listening" || skill === "speaking" ? "shared" : "general_training",
+  sourceName: "Clearband Original",
   sections: [
     {
       id: `${id}-a`,
@@ -169,6 +177,8 @@ export const practiceQuestions: PracticeQuestion[] = [
     answerKey: { answer: index % 2 === 0 ? "pottery" : "The instructor is unavailable." },
     explanation: "The speaker corrects the original time because the instructor is unavailable, not because the room is closed.",
     published: true,
+    moduleType: "shared" as const,
+    sourceName: "Clearband Original",
   })),
   ...Array.from({ length: 10 }, (_, index) => ({
     id: `reading-${index + 1}`,
@@ -193,7 +203,11 @@ export const practiceQuestions: PracticeQuestion[] = [
     },
     explanation: "The answer is limited by the exact wording in the notice. Do not infer extra booking rights.",
     published: true,
+    moduleType: "general_training" as const,
+    sourceName: "Clearband Original",
   })),
+  ...sharedListeningQuestions,
+  ...gtReadingQuestions,
 ];
 
 const writingPromptSeed: Array<[
@@ -215,7 +229,7 @@ const writingPromptSeed: Array<[
   ["task2", "Community volunteering", "Why do some people volunteer in their local community, and how can more people be encouraged to do so?", [], "direct-question"],
 ];
 
-export const writingPrompts: WritingPrompt[] = writingPromptSeed.map(([task, title, prompt, bullets, type], index) => ({
+export const writingPrompts: WritingPrompt[] = writingPromptSeed.map(([task, title, prompt, bullets, type], index): WritingPrompt => ({
   id: `writing-${index + 1}`,
   task: task as "task1" | "task2",
   title,
@@ -223,7 +237,10 @@ export const writingPrompts: WritingPrompt[] = writingPromptSeed.map(([task, tit
   bullets,
   type,
   published: true,
-}));
+  // GT Task 1 is always a letter; Task 2 essays are shared across IELTS versions.
+  moduleType: task === "task1" ? ("general_training" as const) : ("shared" as const),
+  sourceName: "Clearband Original",
+})).concat(gtWritingPrompts);
 
 const speakingPromptSeed: Array<[
   SpeakingPrompt["part"],
@@ -243,14 +260,16 @@ const speakingPromptSeed: Array<[
   ["p3", "technology", "Should public services rely more on mobile apps?", ["access", "privacy", "older users"]],
 ];
 
-export const speakingPrompts: SpeakingPrompt[] = speakingPromptSeed.map(([part, topic, prompt, cuePoints], index) => ({
+export const speakingPrompts: SpeakingPrompt[] = speakingPromptSeed.map(([part, topic, prompt, cuePoints], index): SpeakingPrompt => ({
   id: `speaking-${index + 1}`,
   part: part as "p1" | "p2" | "p3",
   topic,
   prompt,
   cuePoints,
   published: true,
-}));
+  moduleType: "shared" as const,
+  sourceName: "Clearband Original",
+})).concat(gtSpeakingPrompts);
 
 export const studyPlan: StudyPlan = {
   id: "plan-1",

@@ -72,6 +72,7 @@ Migration order (they build on each other):
 2. `0002_auth_storage_seed_support.sql` — first-login trigger, storage buckets.
 3. `0003_onboarding_test_details.sql` — test format/location, overall band.
 4. `0004_learner_persistence.sql` — lesson_progress, revision uniqueness, indexes.
+5. `0005_content_sources_and_classification.sql` — content_sources, imported_content_batches, listening_scripts, module_type/access_scope classification columns, licensed-content access control.
 
 Option A — Supabase CLI:
 
@@ -231,6 +232,51 @@ pretending to save.
 - Open `/mocks/mini-mock-1`.
 - Open `/settings`.
 - Logout and login again.
+
+## Content model: General Training first
+
+Clearband is a General Training app for Canadian Express Entry. Content carries a
+`module_type` (`general_training` / `academic` / `shared` / `unknown`) and a
+`source_id` pointing at `content_sources`.
+
+- **Default path** shows `general_training` + `shared` only. Reading defaults to
+  GT; Writing Task 1 is GT letters only; Writing Task 2, Listening and Speaking
+  are shared. Academic Reading and Academic Writing Task 1 never enter the path.
+- **Academic** content (if ever added) is hidden behind the optional "Academic"
+  filter and never counts toward CLB readiness.
+- All seeded content is tagged `Clearband Original`, `public`, `approved`.
+
+### Adding properly licensed content later (dormant pipeline)
+
+Import is off until you hold a **written licence** permitting digitising,
+Supabase storage, and in-app display (book ownership is not a licence). Then:
+
+```bash
+# 1. Put an approved, licensed manifest under data/import/<source>/manifest.json
+# 2. Validate without writing:
+npm run import:licensed -- data/import/<source>/manifest.json --dry-run
+# 3. Import approved items only:
+npm run import:licensed -- data/import/<source>/manifest.json
+```
+
+The gate (`src/lib/content/import-schema.ts`) refuses any batch without a
+`written_licence_reference` and imports only items marked
+`licence_status=licensed`, `review_status=approved`, `approved_for_import=true`.
+Personal-use sources import as `access_scope=admin_only` so RLS keeps them off
+the public path. Never store the source file in public Supabase storage or expose
+it in the app. See `data/import/README.md`.
+
+### SQL checks for the content model
+
+```sql
+-- Sources and batches exist
+select name, is_licensed, personal_use_only from public.content_sources;
+-- No academic content is on the Canada path
+select count(*) from public.practice_questions
+  where module_type = 'academic' and canada_path_eligible = true;  -- expect 0
+-- Access control column present
+select distinct access_scope from public.practice_questions;
+```
 
 ## Production Safety Notes
 

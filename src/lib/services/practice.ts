@@ -1,5 +1,10 @@
 import { grammarItems, practiceQuestions, vocabularyItems } from "@/lib/mock-data";
-import type { PracticeQuestion } from "@/types/domain";
+import type { ModuleType, PracticeQuestion } from "@/types/domain";
+import {
+  DEFAULT_CONTENT_FILTERS,
+  moduleTypesForFilters,
+  type ContentFilter,
+} from "@/lib/content/classification";
 import { getServiceContext, requireUser } from "./context";
 import { isUuid } from "./content-refs";
 import { awardXpEvent } from "./gamify";
@@ -16,20 +21,34 @@ function questionFromRow(row: Record<string, unknown>): PracticeQuestion {
     answerKey: (row.answer_key as PracticeQuestion["answerKey"]) ?? { answer: "" },
     explanation: String(row.explanation ?? ""),
     published: Boolean(row.published),
+    moduleType: (row.module_type as ModuleType) ?? "general_training",
+    sourceName: (row.source_name as string) ?? undefined,
   };
 }
 
-export async function getPracticeQuestions(skill?: "listening" | "reading") {
+// Default reads stay on the Express Entry path: general_training + shared only.
+// Academic content is surfaced only when the caller passes the academic filter.
+export async function getPracticeQuestions(
+  skill?: "listening" | "reading",
+  filters: ContentFilter[] = DEFAULT_CONTENT_FILTERS,
+) {
+  const modules = moduleTypesForFilters(filters);
   const ctx = await getServiceContext();
   if (ctx.mode === "supabase" && ctx.supabase) {
-    let query = ctx.supabase.from("practice_questions").select("*").eq("published", true);
+    let query = ctx.supabase
+      .from("practice_questions")
+      .select("*")
+      .eq("published", true)
+      .in("module_type", modules);
     if (skill) query = query.eq("skill", skill);
     const { data } = await query;
     if (data?.length) return data.map(questionFromRow);
   }
-  return skill
-    ? practiceQuestions.filter((question) => question.skill === skill)
-    : practiceQuestions;
+  return practiceQuestions.filter(
+    (question) =>
+      (!skill || question.skill === skill) &&
+      modules.includes(question.moduleType ?? "general_training"),
+  );
 }
 
 export async function getVocabulary() {

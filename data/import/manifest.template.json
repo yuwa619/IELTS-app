@@ -1,0 +1,34 @@
+{
+  "source": {
+    "name": "REPLACE — e.g. Publisher Title (Edition, Year)",
+    "publisher": "REPLACE",
+    "edition": "REPLACE",
+    "source_year": 2020,
+    "is_licensed": false,
+    "personal_use_only": true,
+    "licence_note": "Describe exactly what your written licence permits.",
+    "attribution": "Required attribution text, if any.",
+    "written_licence_reference": "REQUIRED before import — reference to the written licence agreement."
+  },
+  "batch": {
+    "name": "REPLACE — e.g. Pilot batch 1",
+    "notes": "Review notes for this batch."
+  },
+  "items": [
+    {
+      "external_ref": "unique-id-within-this-source",
+      "module_type": "general_training",
+      "skill": "reading",
+      "source_type": "practice_question",
+      "prompt": "The exact question stem (only if licensed).",
+      "payload": { "passage": "Passage text (only if licensed).", "options": [] },
+      "answer_key": { "answer": "..." },
+      "explanation": "Original or licensed explanation.",
+      "source_page_start": 0,
+      "source_page_end": 0,
+      "licence_status": "unlicensed",
+      "review_status": "pending",
+      "approved_for_import": false
+    }
+  ]
+}
