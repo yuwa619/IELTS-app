@@ -20,31 +20,57 @@ type RunnerItem =
   | { id: string; kind: "writing"; skill: "writing"; title: string; prompt: WritingPrompt }
   | { id: string; kind: "speaking"; skill: "speaking"; title: string; prompt: SpeakingPrompt };
 
+type MockResult = {
+  overall: number;
+  clb: number;
+  skills: Record<Skill, number>;
+  recommendation: string;
+  saved?: boolean;
+};
+
 export function MiniMockRunner({
   mock,
   practiceQuestions,
   writingPrompts,
   speakingPrompts,
   errorLogs,
-  result,
 }: {
   mock: MockExam;
   practiceQuestions: PracticeQuestion[];
   writingPrompts: WritingPrompt[];
   speakingPrompts: SpeakingPrompt[];
   errorLogs: ErrorLog[];
-  result: {
-    overall: number;
-    clb: number;
-    skills: Record<Skill, number>;
-    recommendation: string;
-  };
 }) {
   const [mode, setMode] = useState<RunnerMode>("intro");
   const [sectionIndex, setSectionIndex] = useState(0);
   const [itemIndex, setItemIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(mock.totalMinutes * 60);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<MockResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function submitMock() {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const response = await fetch("/api/mocks/attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mockId: mock.id, answers }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error?.message ?? "Could not save the mock attempt.");
+      }
+      setResult(body.data as MockResult);
+      setMode("result");
+    } catch (error) {
+      setSubmitError((error as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const sections = mock.sections ?? [];
   const currentSection = sections[sectionIndex] ?? sections[0];
@@ -125,6 +151,8 @@ export function MiniMockRunner({
     setItemIndex(0);
     setSecondsLeft(mock.totalMinutes * 60);
     setAnswers({});
+    setResult(null);
+    setSubmitError(null);
   }
 
   if (mode === "intro") {
@@ -164,21 +192,29 @@ export function MiniMockRunner({
         <p className="text-[var(--text-muted)]">
           You answered {answeredCount} of {totalItems} items. Submit to see your estimated result, error log, and retake recommendation.
         </p>
+        {submitError ? (
+          <p className="text-sm text-[var(--maple)]" role="alert">{submitError}</p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <Button variant="outline" onClick={() => setMode("runner")}>Return to questions</Button>
-          <Button onClick={() => setMode("result")}>Submit mock</Button>
+          <Button onClick={submitMock} disabled={submitting}>
+            {submitting ? "Scoring..." : "Submit mock"}
+          </Button>
         </div>
       </Card>
     );
   }
 
-  if (mode === "result" || mode === "review") {
+  if ((mode === "result" || mode === "review") && result) {
     return (
       <div className="space-y-5">
         <Card className="space-y-4">
           <Badge tone="success">Mock result snapshot</Badge>
           <p className="font-serif text-5xl">{result.overall.toFixed(1)}</p>
-          <p className="text-[var(--text-muted)]">≈ CLB {result.clb} · eligible · target CLB 9</p>
+          <p className="text-[var(--text-muted)]">
+            ≈ CLB {result.clb} (estimate, not an official IELTS score)
+            {result.saved === false ? " · mock mode: not saved" : " · saved to your progress"}
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {Object.entries(result.skills).map(([skill, value]) => (
               <SkillMeter

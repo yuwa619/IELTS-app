@@ -85,6 +85,48 @@ describe("Supabase data mode and auth helpers", () => {
     expect(env.enabledOAuthProviders()).toEqual(["google", "apple"]);
   });
 
+  it("routes signed-in users by onboarding state in middleware", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key");
+
+    let onboarded = false;
+    vi.doMock("@supabase/ssr", () => ({
+      createServerClient: () => ({
+        auth: { getUser: async () => ({ data: { user: { id: "user-1" } } }) },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({ data: { onboarded }, error: null }),
+            }),
+          }),
+        }),
+      }),
+    }));
+
+    const { NextRequest } = await import("next/server");
+    const { updateSession } = await import("@/lib/supabase/middleware");
+
+    const toOnboarding = await updateSession(
+      new NextRequest("https://clearband.netlify.app/dashboard"),
+    );
+    expect(toOnboarding.headers.get("location")).toBe(
+      "https://clearband.netlify.app/onboarding",
+    );
+
+    onboarded = true;
+    const allowed = await updateSession(
+      new NextRequest("https://clearband.netlify.app/dashboard"),
+    );
+    expect(allowed.headers.get("location")).toBeNull();
+
+    const skipOnboarding = await updateSession(
+      new NextRequest("https://clearband.netlify.app/onboarding"),
+    );
+    expect(skipOnboarding.headers.get("location")).toBe(
+      "https://clearband.netlify.app/dashboard",
+    );
+  });
+
   it("classifies app routes as protected for Supabase mode middleware", async () => {
     const { isProtectedAppPath } = await import("@/lib/supabase/middleware");
 

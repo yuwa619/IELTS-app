@@ -1,9 +1,9 @@
-import { ok, validationError } from "@/lib/validation/api";
-import { getProfile } from "@/lib/services/profile";
+import { serviceResponse, validationError } from "@/lib/validation/api";
+import { getProfile, updateProfile } from "@/lib/services/profile";
 import { z } from "zod";
 
 export async function GET() {
-  return ok(await getProfile());
+  return serviceResponse(() => getProfile());
 }
 
 export async function PATCH(request: Request) {
@@ -15,5 +15,5 @@ export async function PATCH(request: Request) {
   });
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) return validationError(parsed.error);
-  return ok({ ...(await getProfile()), ...parsed.data });
+  return serviceResponse(() => updateProfile(parsed.data));
 }

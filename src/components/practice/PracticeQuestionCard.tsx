@@ -5,11 +5,44 @@ import { Button } from "@/components/ui/button";
 import { Alert, Card } from "@/components/ui/surface";
 import type { PracticeQuestion } from "@/types/domain";
 
+type Result = {
+  isCorrect: boolean;
+  expected: string | null;
+  explanation: string;
+  saved?: boolean;
+};
+
 export function PracticeQuestionCard({ question }: { question: PracticeQuestion }) {
   const [answer, setAnswer] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const expected = Array.isArray(question.answerKey.answer) ? question.answerKey.answer[0] : question.answerKey.answer;
-  const correct = answer.trim().toLowerCase() === String(expected).trim().toLowerCase();
+  const [result, setResult] = useState<Result | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [startedAt] = useState(() => Date.now());
+
+  async function submit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/practice/attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: question.id,
+          response: answer,
+          timeMs: Date.now() - startedAt,
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error?.message ?? "Could not save this attempt.");
+      }
+      setResult(body.data as Result);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <Card className="space-y-4">
@@ -43,10 +76,15 @@ export function PracticeQuestionCard({ question }: { question: PracticeQuestion 
           placeholder="Type your answer"
         />
       )}
-      <Button onClick={() => setSubmitted(true)} className="w-full">Submit</Button>
-      {submitted ? (
-        <Alert tone={correct ? "success" : "danger"} title={correct ? "Correct" : "Review this"}>
-          {question.explanation} {question.answerKey.evidence ? `Evidence: ${question.answerKey.evidence}` : ""}
+      <Button onClick={submit} className="w-full" disabled={submitting || !answer}>
+        {submitting ? "Checking..." : "Submit"}
+      </Button>
+      {error ? <p className="text-sm text-[var(--maple)]" role="alert">{error}</p> : null}
+      {result ? (
+        <Alert tone={result.isCorrect ? "success" : "danger"} title={result.isCorrect ? "Correct" : "Review this"}>
+          {result.explanation}{" "}
+          {question.answerKey.evidence ? `Evidence: ${question.answerKey.evidence}` : ""}
+          {result.saved === false ? " (Mock mode: not saved to an account.)" : ""}
         </Alert>
       ) : null}
     </Card>

@@ -80,6 +80,15 @@ export async function POST(request: Request) {
     if (error) return fail("supabase_write_failed", error.message, 500);
   }
 
+  // Kick off the rule-based study plan so /today has tasks immediately.
+  // Plan generation failing should not fail onboarding itself.
+  try {
+    const { generateStudyPlan } = await import("@/lib/services/study-plan");
+    await generateStudyPlan();
+  } catch (error) {
+    console.error("[clearband-onboarding] plan generation failed", (error as Error).message);
+  }
+
   return ok({
     mode: "supabase",
     goal: {

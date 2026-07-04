@@ -96,5 +96,23 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Returning users skip onboarding; new users cannot wander the app shell
+  // before onboarding. Single indexed read on user_profiles.
+  const pathname = request.nextUrl.pathname;
+  if (user && isProtectedAppPath(pathname)) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("onboarded")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const onboarded = Boolean(profile?.onboarded);
+    if (!onboarded && !pathname.startsWith("/onboarding")) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+    if (onboarded && pathname.startsWith("/onboarding")) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
   return response;
 }

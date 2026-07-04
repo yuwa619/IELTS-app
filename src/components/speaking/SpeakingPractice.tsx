@@ -18,6 +18,8 @@ export function SpeakingPractice({ prompt }: { prompt: SpeakingPrompt }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [savedEstimate, setSavedEstimate] = useState<string | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
 
@@ -57,6 +59,29 @@ export function SpeakingPractice({ prompt }: { prompt: SpeakingPrompt }) {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioUrl(null);
     setSeconds(0);
+    setSaveState("idle");
+    setSavedEstimate(null);
+  }
+
+  async function saveAttempt() {
+    setSaveState("saving");
+    try {
+      const response = await fetch("/api/speaking/attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptId: prompt.id, durationS: Math.max(1, seconds) }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error?.message ?? "Could not save the attempt.");
+      }
+      setSaveState("saved");
+      const band = body?.data?.estimate?.band;
+      if (band) setSavedEstimate(`${Number(band.low).toFixed(1)}–${Number(band.high).toFixed(1)}`);
+    } catch (err) {
+      setSaveState("failed");
+      setError((err as Error).message);
+    }
   }
 
   return (
@@ -106,8 +131,22 @@ export function SpeakingPractice({ prompt }: { prompt: SpeakingPrompt }) {
         {audioUrl ? (
           <div className="space-y-3 rounded-2xl bg-white/10 p-4">
             <audio controls src={audioUrl} className="w-full" />
+            <Button
+              className="w-full bg-white text-[var(--navy-700)] hover:bg-white/90"
+              disabled={saveState === "saving" || saveState === "saved"}
+              onClick={saveAttempt}
+            >
+              {saveState === "saved"
+                ? "Attempt saved ✓"
+                : saveState === "saving"
+                  ? "Saving..."
+                  : "Save attempt to my progress"}
+            </Button>
             <Alert tone="warning" title="Estimated practice feedback">
-              {AI_DISCLAIMER} Mock estimate: 6.0-6.5. Next drill: reduce fillers and link ideas with &quot;which means&quot;.
+              {AI_DISCLAIMER}
+              {savedEstimate
+                ? ` Estimated range: ${savedEstimate}. Audio stays on this device; only attempt length and self-review are stored.`
+                : " Audio stays on this device; saving stores attempt length and self-review only."}
             </Alert>
           </div>
         ) : null}

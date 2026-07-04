@@ -66,7 +66,14 @@ Do not add `SUPABASE_SERVICE_ROLE_KEY` to Netlify unless you later add a server-
 
 ## 5. Run Migrations
 
-Install and authenticate the Supabase CLI locally, then link the project:
+Migration order (they build on each other):
+
+1. `0001_clearband_schema.sql` — all core tables, enums, RLS policies.
+2. `0002_auth_storage_seed_support.sql` — first-login trigger, storage buckets.
+3. `0003_onboarding_test_details.sql` — test format/location, overall band.
+4. `0004_learner_persistence.sql` — lesson_progress, revision uniqueness, indexes.
+
+Option A — Supabase CLI:
 
 ```bash
 supabase login
@@ -74,7 +81,39 @@ supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
 
-The migrations create the MVP tables, indexes, RLS policies, auth profile trigger, and private storage buckets.
+Option B — SQL Editor (no CLI needed): open the Supabase dashboard → SQL
+Editor → paste the whole of `supabase/PRODUCTION_BOOTSTRAP.sql` and run it.
+It is generated from all four migrations with idempotency guards, so it is
+safe to run on a fresh **or** partially migrated project — it never drops
+tables or deletes user data.
+
+### Check which tables exist
+
+```sql
+select table_name from information_schema.tables
+where table_schema = 'public' order by table_name;
+```
+
+You should see (checklist): `user_profiles`, `onboarding_goals`,
+`clb_targets`, `study_plans`, `daily_tasks`, `lesson_progress`,
+`practice_attempts`, `writing_attempts`, `speaking_attempts`,
+`mock_attempts`, `revision_items`, `error_logs`, `xp_events`, `badges`,
+`user_badges`, `user_vocabulary_progress`, plus the content tables
+(`lessons`, `lesson_sections`, `practice_questions`, `writing_prompts`,
+`speaking_prompts`, `vocabulary_items`, `grammar_items`, `mock_exams`,
+`mock_sections`, `subscriptions`, `admin_users`, `diagnostic_attempts`,
+`diagnostic_answers`).
+
+### Check RLS policies exist
+
+```sql
+select tablename, policyname from pg_policies
+where schemaname = 'public' order by tablename;
+```
+
+Every user-owned table above must have an "own ..." policy. To test RLS
+end-to-end: sign in as two different emails, complete a practice question as
+user A, then as user B open `/progress` — B must never see A's attempts.
 
 ## 6. Seed Original Content
 
@@ -152,6 +191,28 @@ Recommended temporary check:
 5. Redeploy again.
 
 If the banner says **Mock mode** in production, the Supabase public env vars are missing or misspelled.
+
+## 9b. Test Returning-User Persistence (cross-device)
+
+This is the primary success condition:
+
+1. On your laptop, sign in and complete onboarding.
+2. Complete at least one daily task on `/today` and one practice question.
+3. Open Settings → the **Data status** panel must show `Supabase mode`,
+   `signed in`, profile/onboarding/plan all `yes`, and a recent
+   "last saved activity" time.
+4. Sign out (`/auth/logout`), close the browser, reopen, sign in with the
+   same email → you must land on `/dashboard` (NOT onboarding) with the same
+   XP, tasks, and progress.
+5. On your phone, sign in with the same email → same dashboard, same
+   progress. (With the default `?code=` email flow, request the magic link
+   from the phone itself; with the `token_hash` template, any device works.)
+
+If the app ever shows mock-user data ("Amir", 12-day streak) while you are
+signed in on production, the Supabase env vars are missing at build time —
+check section 3 and redeploy. Mock mode is only for local dev without env
+vars; production writes fail loudly with a visible error instead of
+pretending to save.
 
 ## 10. Post-Deploy Smoke Checklist
 

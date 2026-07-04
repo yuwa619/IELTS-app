@@ -7,13 +7,54 @@ import { Textarea } from "@/components/ui/form";
 import { AI_DISCLAIMER } from "@/lib/ai";
 import type { WritingPrompt } from "@/types/domain";
 
+type Estimate = {
+  criteria: Record<string, number>;
+  band: { low: number; high: number; isEstimate: true; disclaimer: string };
+};
+
+const criteriaLabels: Record<string, string> = {
+  taskAchievement: "Task Achievement",
+  coherenceCohesion: "Coherence & Cohesion",
+  lexicalResource: "Lexical Resource",
+  grammaticalRange: "Grammatical Range & Accuracy",
+};
+
 export function WritingPractice({ prompt }: { prompt: WritingPrompt }) {
   const [text, setText] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [startedAt] = useState(() => Date.now());
   const words = useMemo(() => text.trim().split(/\s+/).filter(Boolean).length, [text]);
   const target = prompt.task === "task1" ? 150 : 250;
-  const estimated = words < target ? "5.5–6.0" : "6.0–6.5";
+
+  async function submit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/writing/attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          promptId: prompt.id,
+          text,
+          timeMs: Date.now() - startedAt,
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error?.message ?? "Could not save this attempt.");
+      }
+      setEstimate(body.data.estimate as Estimate);
+      setSaved(Boolean(body.data.saved));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
@@ -52,7 +93,7 @@ export function WritingPractice({ prompt }: { prompt: WritingPrompt }) {
             onChange={(event) => setConsent(event.target.checked)}
           />
           <span>
-            I understand this writing sample is sensitive practice data. In mock mode it stays local; live storage must support deletion.
+            I understand this writing sample is sensitive practice data. It is stored in my account, only visible to me, and deletable.
           </span>
         </label>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -64,22 +105,33 @@ export function WritingPractice({ prompt }: { prompt: WritingPrompt }) {
             />
             <p className="mt-1 font-mono text-xs text-[var(--text-muted)]">{words} / {target} words</p>
           </div>
-          <Button onClick={() => setSubmitted(true)} disabled={!consent || words === 0}>
-            Submit for feedback
+          <Button onClick={submit} disabled={!consent || words === 0 || submitting}>
+            {submitting ? "Submitting..." : "Submit for feedback"}
           </Button>
         </div>
-        {submitted ? (
+        {error ? <p className="text-sm text-[var(--maple)]" role="alert">{error}</p> : null}
+        {estimate ? (
           <Card className="border-[var(--warning)] bg-[var(--warning-50)]">
             <p className="font-mono text-xs uppercase text-[var(--text-muted)]">Estimated practice band</p>
-            <p className="font-serif text-4xl">{estimated}</p>
+            <p className="font-serif text-4xl">
+              {estimate.band.low.toFixed(1)}–{estimate.band.high.toFixed(1)}
+            </p>
+            {saved === false ? (
+              <p className="mt-1 text-sm text-[var(--text-muted)]">Mock mode: this attempt was not saved to an account.</p>
+            ) : (
+              <p className="mt-1 text-sm text-[var(--success)]">Saved to your account.</p>
+            )}
             <div className="mt-4 space-y-3">
-              {["Task Achievement", "Coherence & Cohesion", "Lexical Resource", "Grammatical Range & Accuracy"].map((criterion, index) => (
-                <div key={criterion}>
-                  <div className="flex justify-between text-sm"><span>{criterion}</span><span>{index === 3 ? "5.5" : "6.0"}</span></div>
+              {Object.entries(estimate.criteria).map(([key, value]) => (
+                <div key={key}>
+                  <div className="flex justify-between text-sm">
+                    <span>{criteriaLabels[key] ?? key}</span>
+                    <span>{Number(value).toFixed(1)}</span>
+                  </div>
                   <ProgressBar
-                    value={index === 3 ? 61 : 66}
+                    value={(Number(value) / 9) * 100}
                     color="var(--skill-writing)"
-                    ariaLabel={`${criterion} estimated score progress`}
+                    ariaLabel={`${criteriaLabels[key] ?? key} estimated score progress`}
                   />
                 </div>
               ))}
