@@ -9,6 +9,13 @@ export async function POST(request: Request) {
   const parsed = onboardingSchema.safeParse(await request.json());
   if (!parsed.success) return validationError(parsed.error);
 
+  if (parsed.data.testDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (parsed.data.testDate < today) {
+      return fail("test_date_in_past", "Pick a test date that is today or later.", 400);
+    }
+  }
+
   if (getDataMode() === "mock") {
     return ok(await saveOnboarding(parsed.data));
   }
@@ -48,6 +55,8 @@ export async function POST(request: Request) {
         user_id: user.id,
         goal_mode: parsed.data.goalMode,
         test_date: parsed.data.testDate ?? null,
+        test_format: parsed.data.testFormat ?? null,
+        test_location: parsed.data.testLocation?.trim() || null,
         confidence: parsed.data.confidence,
       },
       { onConflict: "user_id" },
@@ -56,6 +65,7 @@ export async function POST(request: Request) {
       {
         user_id: user.id,
         target_clb: parsed.data.targetClb,
+        target_overall_band: parsed.data.targetOverallBand ?? null,
         listening: target.listening,
         reading: target.reading,
         writing: target.writing,
@@ -76,8 +86,10 @@ export async function POST(request: Request) {
       userId: user.id,
       goalMode: parsed.data.goalMode,
       testDate: parsed.data.testDate ?? null,
+      testFormat: parsed.data.testFormat ?? "unsure",
+      testLocation: parsed.data.testLocation?.trim() || null,
       confidence: parsed.data.confidence,
     },
-    targets: target,
+    targets: { ...target, targetOverallBand: parsed.data.targetOverallBand ?? null },
   });
 }

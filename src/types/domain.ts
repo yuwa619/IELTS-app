@@ -1,5 +1,6 @@
 export type Skill = "listening" | "reading" | "writing" | "speaking";
 export type GoalMode = "eligible" | "crs" | "unsure";
+export type TestFormat = "computer" | "paper" | "unsure";
 export type DailyBlock = "warmup" | "lesson" | "practice" | "review";
 export type TaskStatus = "pending" | "done" | "skipped";
 export type QuestionType =
@@ -27,6 +28,8 @@ export interface CanadaGoal {
   userId: string;
   goalMode: GoalMode;
   testDate: string | null;
+  testFormat?: TestFormat;
+  testLocation?: string | null;
   confidence: number;
 }
 
