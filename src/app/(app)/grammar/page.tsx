@@ -1,7 +1,8 @@
 import { PageHeader } from "@/components/layout/shells";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/surface";
+import { GrammarCard } from "@/components/practice/GrammarCard";
 import { getGrammar } from "@/lib/services/practice";
+
+export const dynamic = "force-dynamic";
 
 export default async function GrammarPage() {
   const items = await getGrammar();
@@ -10,11 +11,7 @@ export default async function GrammarPage() {
       <PageHeader title="Grammar practice" eyebrow="Micro-drills" />
       <div className="grid gap-3 sm:grid-cols-2">
         {items.slice(0, 8).map((item) => (
-          <Card key={item.id} className="space-y-3">
-            <h2 className="font-semibold">{item.title}</h2>
-            <p className="text-sm leading-6 text-[var(--text-muted)]">{item.rule}</p>
-            <Button variant="secondary" size="sm">Explain rule</Button>
-          </Card>
+          <GrammarCard key={item.id} item={item} />
         ))}
       </div>
     </div>

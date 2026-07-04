@@ -3,18 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { CompletionActionPanel } from "@/components/practice/CompletionActionPanel";
 
 export function CompleteLessonButton({
   lessonId,
   completed,
+  taskId,
 }: {
   lessonId: string;
   completed?: boolean;
+  taskId?: string | null;
 }) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "saving" | "done" | "error">(
     completed ? "done" : "idle",
   );
+  const [justCompleted, setJustCompleted] = useState(false);
+  const [xp, setXp] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
 
   async function complete() {
@@ -31,12 +36,30 @@ export function CompleteLessonButton({
         throw new Error(body?.error?.message ?? "Could not save lesson completion.");
       }
       setState("done");
-      if (body?.data?.xpAwarded) setMessage(`+${body.data.xpAwarded} XP`);
+      setJustCompleted(true);
+      setXp(Number(body?.data?.xpAwarded ?? 0));
       router.refresh();
     } catch (error) {
       setState("error");
       setMessage((error as Error).message);
     }
+  }
+
+  if (justCompleted) {
+    return (
+      <CompletionActionPanel
+        title="Lesson complete"
+        savedNote="Your lesson progress is saved."
+        xpAwarded={xp}
+        taskId={taskId}
+        primaryAction={{ href: "/lessons", label: "Next lesson" }}
+        secondaryActions={[
+          { href: "/today", label: "Today's plan" },
+          { href: "/review", label: "Review queue" },
+          { href: "/progress", label: "Progress" },
+        ]}
+      />
+    );
   }
 
   return (

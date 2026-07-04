@@ -15,6 +15,9 @@ export const writingAttemptSchema = z.object({
   promptId: z.string().min(1),
   text: z.string().min(20),
   timeMs: z.number().int().min(0),
+  startedAt: z.iso.datetime().optional(),
+  timeLimitSeconds: z.number().int().positive().optional(),
+  overTime: z.boolean().optional(),
 });
 
 export const speakingAttemptSchema = z.object({

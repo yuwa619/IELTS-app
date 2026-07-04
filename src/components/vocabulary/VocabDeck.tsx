@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, EmptyState } from "@/components/ui/surface";
+import { CompletionActionPanel } from "@/components/practice/CompletionActionPanel";
 import type { VocabularyItem } from "@/types/domain";
 
 const grades = ["again", "hard", "good", "easy"] as const;
@@ -38,7 +39,26 @@ export function VocabDeck({ words }: { words: VocabularyItem[] }) {
   }
 
   if (!word) {
-    return <EmptyState title="Deck complete" body="You graded every card in this session. Come back when reviews are due." />;
+    if (!words.length) {
+      return <EmptyState title="Deck empty" body="Vocabulary cards will appear here once content is seeded." />;
+    }
+    return (
+      <CompletionActionPanel
+        title="Deck complete"
+        savedNote={`You graded all ${words.length} cards. Grades set when each card comes back.`}
+        primaryAction={{ href: "/today", label: "Back to Today's plan" }}
+        onRetry={() => {
+          setIndex(0);
+          setRevealed(false);
+        }}
+        retryLabel="Run the deck again"
+        secondaryActions={[
+          { href: "/review", label: "Review queue" },
+          { href: "/grammar", label: "Grammar" },
+          { href: "/progress", label: "Progress" },
+        ]}
+      />
+    );
   }
 
   return (

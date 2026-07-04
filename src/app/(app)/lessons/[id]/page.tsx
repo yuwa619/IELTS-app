@@ -6,8 +6,15 @@ import { getLesson } from "@/lib/services/lessons";
 
 export const dynamic = "force-dynamic";
 
-export default async function LessonDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function LessonDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ taskId?: string }>;
+}) {
   const { id } = await params;
+  const { taskId } = await searchParams;
   const lesson = await getLesson(id);
   return (
     <div className="space-y-5">
@@ -22,7 +29,7 @@ export default async function LessonDetailPage({ params }: { params: Promise<{ i
         ))}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <CompleteLessonButton lessonId={lesson.id} completed={lesson.completed} />
+        <CompleteLessonButton lessonId={lesson.id} completed={lesson.completed} taskId={taskId ?? null} />
         <ButtonLink href="/review" variant="outline">Save key point</ButtonLink>
       </div>
     </div>

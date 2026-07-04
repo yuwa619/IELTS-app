@@ -4,10 +4,19 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Mic, Square, Trash2 } from "lucide-react";
 import { Alert, Card, Timer } from "@/components/ui/surface";
 import { Button } from "@/components/ui/button";
+import { CompletionActionPanel } from "@/components/practice/CompletionActionPanel";
 import { AI_DISCLAIMER } from "@/lib/ai";
 import type { SpeakingPrompt } from "@/types/domain";
 
-export function SpeakingPractice({ prompt }: { prompt: SpeakingPrompt }) {
+export function SpeakingPractice({
+  prompt,
+  taskId,
+  nextPromptHref,
+}: {
+  prompt: SpeakingPrompt;
+  taskId?: string | null;
+  nextPromptHref?: string;
+}) {
   const supported = useSyncExternalStore(
     () => () => undefined,
     () => typeof window !== "undefined" && "MediaRecorder" in window,
@@ -84,6 +93,31 @@ export function SpeakingPractice({ prompt }: { prompt: SpeakingPrompt }) {
     }
   }
 
+  if (saveState === "saved") {
+    return (
+      <CompletionActionPanel
+        title="Speaking attempt saved"
+        savedNote={
+          savedEstimate
+            ? `Estimated range ${savedEstimate} (practice estimate, not an official IELTS score). Audio stays on this device.`
+            : "Attempt metadata saved. Audio stays on this device."
+        }
+        xpAwarded={25}
+        taskId={taskId}
+        primaryAction={
+          nextPromptHref
+            ? { href: nextPromptHref, label: "Try another cue card" }
+            : { href: "/today", label: "Back to Today's plan" }
+        }
+        secondaryActions={[
+          { href: "/today", label: "Today's plan" },
+          { href: "/progress", label: "Progress" },
+          { href: "/review", label: "Review queue" },
+        ]}
+      />
+    );
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
       <Card className="space-y-4 bg-[#FBF3E2]">
@@ -133,14 +167,10 @@ export function SpeakingPractice({ prompt }: { prompt: SpeakingPrompt }) {
             <audio controls src={audioUrl} className="w-full" />
             <Button
               className="w-full bg-white text-[var(--navy-700)] hover:bg-white/90"
-              disabled={saveState === "saving" || saveState === "saved"}
+              disabled={saveState === "saving"}
               onClick={saveAttempt}
             >
-              {saveState === "saved"
-                ? "Attempt saved ✓"
-                : saveState === "saving"
-                  ? "Saving..."
-                  : "Save attempt to my progress"}
+              {saveState === "saving" ? "Saving..." : "Save attempt to my progress"}
             </Button>
             <Alert tone="warning" title="Estimated practice feedback">
               {AI_DISCLAIMER}

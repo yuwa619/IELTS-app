@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronLeft, ChevronRight, RotateCcw } from "lucide-reac
 import { Alert, Badge, Card, SkillMeter, Timer } from "@/components/ui/surface";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/form";
+import { CompletionActionPanel } from "@/components/practice/CompletionActionPanel";
 import type {
   ErrorLog,
   MockExam,
@@ -235,6 +236,21 @@ export function MiniMockRunner({
             <Button variant="outline" onClick={() => setMode("runner")}>Back to answers</Button>
           </div>
         </Card>
+        <CompletionActionPanel
+          title="Mini mock complete"
+          savedNote={
+            result.saved === false
+              ? "Mock mode: this result was not saved to an account."
+              : "Result saved. Your score progression and error log are updated."
+          }
+          xpAwarded={result.saved ? 80 : 0}
+          primaryAction={{ href: "/review", label: "Repair top errors" }}
+          secondaryActions={[
+            { href: "/today", label: "Today's plan" },
+            { href: "/progress", label: "Progress" },
+            { href: "/mocks", label: "All mocks" },
+          ]}
+        />
 
         {mode === "review" ? (
           <Card className="space-y-3">

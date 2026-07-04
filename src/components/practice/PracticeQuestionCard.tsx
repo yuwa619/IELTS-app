@@ -12,7 +12,13 @@ type Result = {
   saved?: boolean;
 };
 
-export function PracticeQuestionCard({ question }: { question: PracticeQuestion }) {
+export function PracticeQuestionCard({
+  question,
+  onNext,
+}: {
+  question: PracticeQuestion;
+  onNext?: (wasCorrect: boolean) => void;
+}) {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,11 +87,18 @@ export function PracticeQuestionCard({ question }: { question: PracticeQuestion 
       </Button>
       {error ? <p className="text-sm text-[var(--maple)]" role="alert">{error}</p> : null}
       {result ? (
-        <Alert tone={result.isCorrect ? "success" : "danger"} title={result.isCorrect ? "Correct" : "Review this"}>
-          {result.explanation}{" "}
-          {question.answerKey.evidence ? `Evidence: ${question.answerKey.evidence}` : ""}
-          {result.saved === false ? " (Mock mode: not saved to an account.)" : ""}
-        </Alert>
+        <>
+          <Alert tone={result.isCorrect ? "success" : "danger"} title={result.isCorrect ? "Correct" : "Review this"}>
+            {result.explanation}{" "}
+            {question.answerKey.evidence ? `Evidence: ${question.answerKey.evidence}` : ""}
+            {result.saved === false ? " (Mock mode: not saved to an account.)" : ""}
+          </Alert>
+          {onNext ? (
+            <Button variant="secondary" className="w-full" onClick={() => onNext(result.isCorrect)}>
+              Next question
+            </Button>
+          ) : null}
+        </>
       ) : null}
     </Card>
   );

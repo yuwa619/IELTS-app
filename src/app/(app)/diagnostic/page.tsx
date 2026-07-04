@@ -1,5 +1,5 @@
 import { ButtonLink } from "@/components/ui/button";
-import { Alert, Badge, Card, SkillMeter, Timer } from "@/components/ui/surface";
+import { Alert, Badge, Card, SkillMeter } from "@/components/ui/surface";
 import { PracticeQuestionCard } from "@/components/practice/PracticeQuestionCard";
 import { getDiagnosticResult, getDiagnosticSet } from "@/lib/services/diagnostic";
 
@@ -21,10 +21,7 @@ export default async function DiagnosticPage() {
       </Card>
       {reading ? <PracticeQuestionCard question={reading} /> : null}
       <Card className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-3xl">Estimated starting band</h2>
-          <Timer>5:12</Timer>
-        </div>
+        <h2 className="font-serif text-3xl">Estimated starting band (sample)</h2>
         <p className="font-serif text-6xl">{result.startingBand.toFixed(1)}</p>
         <p className="text-[var(--text-muted)]">≈ CLB {result.clb} · target is CLB 9 (7.0)</p>
         <div className="grid gap-4 sm:grid-cols-2">

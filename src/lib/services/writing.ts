@@ -40,7 +40,14 @@ export async function getWritingPrompts(task?: "task1" | "task2") {
   );
 }
 
-export async function submitWriting(input: { promptId: string; text: string; timeMs: number }) {
+export async function submitWriting(input: {
+  promptId: string;
+  text: string;
+  timeMs: number;
+  startedAt?: string;
+  timeLimitSeconds?: number;
+  overTime?: boolean;
+}) {
   const ctx = await getServiceContext();
 
   let promptTask: "task1" | "task2" = "task1";
@@ -73,6 +80,15 @@ export async function submitWriting(input: { promptId: string; text: string; tim
   }
 
   const { supabase, user } = requireUser(ctx);
+  // Timing metadata rides inside the estimate jsonb: no migration needed and
+  // it stays attached to the attempt for history/review.
+  const timing = {
+    started_at: input.startedAt ?? null,
+    submitted_at: new Date().toISOString(),
+    time_limit_seconds: input.timeLimitSeconds ?? null,
+    time_spent_seconds: Math.round(input.timeMs / 1000),
+    over_time: Boolean(input.overTime),
+  };
   const { data, error } = await supabase
     .from("writing_attempts")
     .insert({
@@ -81,7 +97,7 @@ export async function submitWriting(input: { promptId: string; text: string; tim
       text: input.text,
       word_count: wordCount,
       time_ms: input.timeMs,
-      estimate: { ...estimate, promptRef: input.promptId },
+      estimate: { ...estimate, promptRef: input.promptId, timing },
     })
     .select("id")
     .single();

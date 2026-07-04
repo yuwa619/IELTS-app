@@ -6,10 +6,12 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/surface";
 import type { DailyTask } from "@/types/domain";
 
+// Starting a task carries ?taskId= so the activity can mark it complete on
+// finish (the CompletionActionPanel posts /api/tasks/complete once).
 function taskHref(task: DailyTask) {
-  if (task.refType === "lesson") return `/lessons/${task.refId}`;
-  if (task.refType === "revision" || task.refType === "review") return "/review";
-  if (task.refType === "practice") return "/practice/writing/task-1";
+  if (task.refType === "lesson") return `/lessons/${task.refId}?taskId=${task.id}`;
+  if (task.refType === "revision" || task.refType === "review") return `/review?taskId=${task.id}`;
+  if (task.refType === "practice") return `/practice/writing/task-1?taskId=${task.id}`;
   return "/today";
 }
 

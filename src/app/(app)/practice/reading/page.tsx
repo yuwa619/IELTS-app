@@ -1,14 +1,25 @@
 import { PageHeader } from "@/components/layout/shells";
-import { PracticeQuestionCard } from "@/components/practice/PracticeQuestionCard";
-import { Timer } from "@/components/ui/surface";
+import { PracticeSet } from "@/components/practice/PracticeSet";
 import { getPracticeQuestions } from "@/lib/services/practice";
 
-export default async function ReadingPage() {
-  const [question] = await getPracticeQuestions("reading");
+export const dynamic = "force-dynamic";
+
+export default async function ReadingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ taskId?: string }>;
+}) {
+  const { taskId } = await searchParams;
+  const questions = (await getPracticeQuestions("reading")).slice(0, 5);
   return (
     <div className="space-y-5">
-      <PageHeader title="Reading practice" eyebrow="GT passage · True / False / Not Given" action={<Timer>6:20</Timer>} />
-      {question ? <PracticeQuestionCard question={question} /> : null}
+      <PageHeader title="Reading practice" eyebrow="General Training · notices and workplace texts" />
+      <PracticeSet
+        questions={questions}
+        skillLabel="Reading"
+        taskId={taskId ?? null}
+        retryHref="/practice/reading"
+      />
     </div>
   );
 }
