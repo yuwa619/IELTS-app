@@ -1,5 +1,5 @@
 -- PRODUCTION_BOOTSTRAP.sql
--- Generated from supabase/migrations/0001..0005 with idempotency guards.
+-- Generated from supabase/migrations/0001..0006 with idempotency guards.
 -- Safe to paste into the Supabase SQL Editor on a fresh OR partially
 -- migrated project: existing tables, types, policies and data are kept.
 -- Order matters; run this file top to bottom in one go.
@@ -940,3 +940,28 @@ drop trigger if exists set_listening_scripts_updated_at on public.listening_scri
 create trigger set_listening_scripts_updated_at
   before update on public.listening_scripts
   for each row execute function public.set_updated_at();
+
+
+-- ============ from 0006_rich_lesson_content.sql ============
+
+-- Rich lesson content model: typed section kinds + structured payloads,
+-- lesson difficulty/CLB metadata, saved lesson key points. Additive.
+alter table public.lesson_sections
+  add column if not exists kind text not null default 'explanation';
+alter table public.lesson_sections
+  add column if not exists data jsonb;
+
+alter table public.lessons
+  add column if not exists difficulty int not null default 2;
+alter table public.lessons
+  add column if not exists clb_focus text;
+
+do $$ begin
+  alter table public.lessons
+    add constraint lessons_difficulty_range check (difficulty between 1 and 3);
+exception when duplicate_object then null; end $$;
+
+alter table public.revision_items
+  add column if not exists title text;
+alter table public.revision_items
+  add column if not exists note text;

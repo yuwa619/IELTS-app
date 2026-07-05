@@ -87,6 +87,8 @@ async function main() {
           summary: lesson.summary,
           est_minutes: lesson.estMinutes,
           display_order: lesson.order,
+          difficulty: lesson.difficulty ?? 2,
+          clb_focus: lesson.clbFocus ?? null,
           published: true,
           ...classification(lesson.moduleType === "shared" ? "shared" : "general_training", clearbandSourceId),
         })),
@@ -102,8 +104,10 @@ async function main() {
     return (lesson.sections ?? []).map((section) => ({
       lesson_id: lessonId,
       display_order: section.order,
+      kind: section.kind ?? "explanation",
       heading: section.heading,
       body: section.body,
+      data: section.data ?? null,
       media: null,
     }));
   });

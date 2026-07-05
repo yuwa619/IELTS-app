@@ -1,8 +1,7 @@
 import { PageHeader } from "@/components/layout/shells";
-import { CompleteLessonButton } from "@/components/lessons/CompleteLessonButton";
-import { ButtonLink } from "@/components/ui/button";
-import { Badge, Card } from "@/components/ui/surface";
-import { getLesson } from "@/lib/services/lessons";
+import { LessonPlayer } from "@/components/lessons/LessonPlayer";
+import { Badge } from "@/components/ui/surface";
+import { getLesson, getLessons } from "@/lib/services/lessons";
 
 export const dynamic = "force-dynamic";
 
@@ -15,23 +14,27 @@ export default async function LessonDetailPage({
 }) {
   const { id } = await params;
   const { taskId } = await searchParams;
-  const lesson = await getLesson(id);
+  const [lesson, allLessons] = await Promise.all([getLesson(id), getLessons()]);
+
+  // Recommended next lesson: first uncompleted lesson after this one in
+  // curriculum order, falling back to the next by order, then none.
+  const ordered = [...allLessons].sort((a, b) => a.order - b.order);
+  const index = ordered.findIndex((entry) => entry.id === lesson.id);
+  const after = index >= 0 ? ordered.slice(index + 1) : [];
+  const nextLesson = after.find((entry) => !entry.completed) ?? after[0] ?? null;
+
   return (
     <div className="space-y-5">
-      <PageHeader title={lesson.title} eyebrow={`${lesson.module} · Lesson ${lesson.order}/10`} action={<Badge tone={lesson.skill}>{lesson.skill}</Badge>} />
-      <div className="space-y-3">
-        {lesson.sections?.map((section) => (
-          <Card key={section.id} className="space-y-2">
-            <p className="font-mono text-xs text-[var(--text-muted)]">{String(section.order).padStart(2, "0")}</p>
-            <h2 className="text-xl font-semibold">{section.heading}</h2>
-            <p className="leading-7 text-[var(--text-muted)]">{section.body}</p>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CompleteLessonButton lessonId={lesson.id} completed={lesson.completed} taskId={taskId ?? null} />
-        <ButtonLink href="/review" variant="outline">Save key point</ButtonLink>
-      </div>
+      <PageHeader
+        title={lesson.title}
+        eyebrow={`${lesson.module} · Lesson ${lesson.order}/${ordered.length || lesson.order}`}
+        action={<Badge tone={lesson.skill}>{lesson.skill}</Badge>}
+      />
+      <LessonPlayer
+        lesson={lesson}
+        taskId={taskId ?? null}
+        nextLesson={nextLesson ? { id: nextLesson.id, title: nextLesson.title } : null}
+      />
     </div>
   );
 }

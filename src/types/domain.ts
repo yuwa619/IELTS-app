@@ -70,15 +70,65 @@ export interface Lesson {
   published: boolean;
   moduleType?: ModuleType;
   sourceName?: string;
+  /** 1 = foundation, 2 = core, 3 = band 7+ stretch */
+  difficulty?: number;
+  /** e.g. "CLB 7+", "CLB 7–9" — Canada Express Entry relevance */
+  clbFocus?: string;
   sections?: LessonSection[];
+}
+
+/**
+ * Section kinds drive the interactive lesson player. Plain teaching prose
+ * uses `explanation`; interactive blocks (`quick_check`, `guided_practice`)
+ * carry their payload in `data`.
+ */
+export type LessonSectionKind =
+  | "intro"
+  | "objectives"
+  | "explanation"
+  | "gt_relevance"
+  | "example"
+  | "mistake"
+  | "strategy"
+  | "checklist"
+  | "guided_practice"
+  | "quick_check"
+  | "reflection"
+  | "key_point"
+  | "next_step";
+
+export interface LessonSectionData {
+  /** objectives / strategy / checklist bullets */
+  items?: string[];
+  /** example blocks: the sample language or extract being shown */
+  sample?: string;
+  /** caption or comment under a sample */
+  note?: string;
+  /** guided practice: the task the learner attempts first */
+  task?: string;
+  /** guided practice: revealed model approach (a framework, never a script) */
+  modelAnswer?: string;
+  /** quick check: answer options */
+  options?: string[];
+  /** quick check: the correct option (must match one entry in options) */
+  answer?: string;
+  /** quick check: feedback shown after answering */
+  explanation?: string;
+  /** key point: the one-line takeaway saved to the review queue */
+  keyPoint?: string;
+  /** next step: recommended follow-up action */
+  nextHref?: string;
+  nextLabel?: string;
 }
 
 export interface LessonSection {
   id: string;
   lessonId: string;
   order: number;
+  kind: LessonSectionKind;
   heading: string;
   body: string;
+  data?: LessonSectionData;
 }
 
 export interface PracticeQuestion {
@@ -259,9 +309,11 @@ export interface GrammarItem {
 export interface RevisionItem {
   id: string;
   userId: string;
-  refType: "question" | "vocab" | "grammar" | "error";
+  refType: "question" | "vocab" | "grammar" | "error" | "lesson";
   refId: string;
   title: string;
+  /** Saved lesson key point text, shown in the review queue */
+  note?: string;
   dueAt: string;
   ease: number;
   interval: number;

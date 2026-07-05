@@ -22,6 +22,7 @@ import {
   gtWritingPrompts,
   sharedListeningQuestions,
 } from "./gt-content";
+import { lessonLibrary } from "./lesson-library";
 
 export const mockUser: UserProfile = {
   userId: "mock-user",
@@ -42,58 +43,9 @@ export const mockGoal: CanadaGoal = {
 
 export const mockTarget = targetForClb(9);
 
-const skillLessons = [
-  ["lesson-1", "IELTS General Training for Express Entry", "Foundations", "reading", "Understand the GT format, timing, and how CLB targets change your plan."],
-  ["lesson-2", "Choosing the right GT letter tone", "Writing Task 1", "writing", "Match purpose, reader, and tone before writing a letter."],
-  ["lesson-3", "Covering all three bullet points", "Writing Task 1", "writing", "Plan a complete response without memorised templates."],
-  ["lesson-4", "Task 2 position and paragraph control", "Writing Task 2", "writing", "Build a clear opinion with two supported body paragraphs."],
-  ["lesson-5", "True, False, Not Given discipline", "Reading", "reading", "Separate stated facts from plausible but unstated ideas."],
-  ["lesson-6", "Scanning workplace notices", "Reading", "reading", "Find names, dates, limits, and exceptions quickly."],
-  ["lesson-7", "Listening prediction and signposting", "Listening", "listening", "Predict answer type and track speaker corrections."],
-  ["lesson-8", "Form completion accuracy", "Listening", "listening", "Avoid spelling and number-format losses."],
-  ["lesson-9", "Speaking Part 2 cue-map", "Speaking", "speaking", "Use notes to speak naturally, not from a script."],
-  ["lesson-10", "Weekly review and error repair", "Revision", "reading", "Turn mistakes into a spaced, targeted review queue."],
-] as const;
-
-export const lessons: Lesson[] = skillLessons.map(([id, title, module, skill, summary], index) => ({
-  id,
-  title,
-  slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-  module,
-  skill,
-  summary,
-  estMinutes: index < 4 ? 8 : 10,
-  order: index + 1,
-  published: true,
-  moduleType: skill === "listening" || skill === "speaking" ? "shared" : "general_training",
-  sourceName: "Clearband Original",
-  sections: [
-    {
-      id: `${id}-a`,
-      lessonId: id,
-      order: 1,
-      heading: "Concept",
-      body: summary,
-    },
-    {
-      id: `${id}-b`,
-      lessonId: id,
-      order: 2,
-      heading: "Framework",
-      body:
-        skill === "writing"
-          ? "Decide the reader, purpose, required points, and paragraph shape before drafting. Do not memorise full answers."
-          : "Predict the task, mark constraints, answer only from evidence, and log one mistake pattern after review.",
-    },
-    {
-      id: `${id}-c`,
-      lessonId: id,
-      order: 3,
-      heading: "Quick check",
-      body: "Choose one rule you will apply in your next timed practice block.",
-    },
-  ],
-}));
+// Full interactive lesson library (28 original GT-focused lessons) lives in
+// lesson-library-core.ts / lesson-library-productive.ts.
+export const lessons: Lesson[] = lessonLibrary;
 
 const vocabTerms = [
   ["liaise", "/liˈeɪz/", "to work together and share information to get something done", "I will liaise with the front desk and confirm your booking.", "workplace"],

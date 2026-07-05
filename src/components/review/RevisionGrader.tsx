@@ -72,8 +72,11 @@ export function RevisionGrader({
       {error ? <p className="text-sm text-[var(--maple)]" role="alert">{error}</p> : null}
       {items.map((item) => (
         <Card key={item.id} className="space-y-3">
-          <Badge>{item.refType}</Badge>
+          <Badge>{item.refType === "lesson" ? "key point" : item.refType}</Badge>
           <h2 className="text-lg font-semibold">{item.title}</h2>
+          {item.note ? (
+            <p className="rounded-xl bg-[var(--tint)] p-3 text-[15px] leading-6">{item.note}</p>
+          ) : null}
           <p className="text-sm text-[var(--text-muted)]">Due now · interval {item.interval} days</p>
           <div className="grid grid-cols-4 gap-2">
             {grades.map((value) => (

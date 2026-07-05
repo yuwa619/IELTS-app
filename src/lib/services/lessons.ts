@@ -1,5 +1,5 @@
 import { lessons } from "@/lib/mock-data";
-import type { Lesson } from "@/types/domain";
+import type { Lesson, LessonSection } from "@/types/domain";
 import { getServiceContext, requireUser } from "./context";
 import { isUuid } from "./content-refs";
 import { awardXpEvent } from "./gamify";
@@ -17,12 +17,16 @@ function lessonFromRow(row: Record<string, unknown>, sections?: Record<string, u
     published: Boolean(row.published),
     moduleType: (row.module_type as Lesson["moduleType"]) ?? "general_training",
     sourceName: (row.source_name as string) ?? undefined,
+    difficulty: Number(row.difficulty ?? 2),
+    clbFocus: (row.clb_focus as string) ?? undefined,
     sections: sections?.map((section) => ({
       id: String(section.id),
       lessonId: String(section.lesson_id ?? row.id),
       order: Number(section.display_order ?? 0),
+      kind: (section.kind as LessonSection["kind"]) ?? "explanation",
       heading: String(section.heading ?? ""),
       body: String(section.body ?? ""),
+      data: (section.data as LessonSection["data"]) ?? undefined,
     })),
   };
 }

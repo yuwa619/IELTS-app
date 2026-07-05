@@ -16,11 +16,39 @@ function itemFromRow(row: Record<string, unknown>): RevisionItem {
     userId: String(row.user_id),
     refType: row.ref_type as RevisionItem["refType"],
     refId: String(row.ref_id),
-    title: `Review ${String(row.ref_type)} item`,
+    title: (row.title as string) || `Review ${String(row.ref_type)} item`,
+    note: (row.note as string) ?? undefined,
     dueAt: String(row.due_at),
     ease: Number(row.ease ?? 2.3),
     interval: Number(row.interval ?? 1),
   };
+}
+
+/**
+ * "Save key point" from a lesson: upserts one revision item per
+ * (user, lesson) via the uq_revision_items_ref unique index, due
+ * immediately so it appears in the next review session.
+ */
+export async function saveLessonKeyPoint(lessonId: string, title: string, note: string) {
+  const ctx = await getServiceContext();
+  if (ctx.mode === "mock") {
+    return { saved: true, refId: lessonId };
+  }
+
+  const { supabase, user } = requireUser(ctx);
+  const { error } = await supabase.from("revision_items").upsert(
+    {
+      user_id: user.id,
+      ref_type: "lesson",
+      ref_id: lessonId,
+      title,
+      note,
+      due_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,ref_type,ref_id" },
+  );
+  if (error) throw new Error(error.message);
+  return { saved: true, refId: lessonId };
 }
 
 export async function getDueRevision(): Promise<RevisionItem[]> {
